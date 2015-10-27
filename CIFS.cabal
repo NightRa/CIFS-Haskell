@@ -18,7 +18,12 @@ library
   exposed-modules:     Lib
   build-depends:       base >= 4.7 && < 5,
                        cryptohash,
-                       bytestring
+                       bytestring,
+                       base16-bytestring,
+                       aeson,
+                       aeson-pretty,
+                       attoparsec,
+                       text
   default-language:    Haskell2010
 
 executable CIFS
