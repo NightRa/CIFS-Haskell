@@ -1,6 +1,7 @@
 module Main where
 
 import Lib
+import Win32.ContextMenu
 
 import qualified Data.ByteString as BS
 import System.Environment
@@ -29,5 +30,12 @@ prog args = if length args /= 1
 
 main :: IO ()
 main = do
+  -- putStrLn "Press enter to register in context menu: "
+  -- _ <- getChar
+  -- elevate
+  -- addFileContextMenuItem "Hash" "Hash" (Just "C:/Users/Ilan/AppData/Roaming/local/bin/ProjectUnivIcon.ico") "\"C:/Users/Ilan/AppData/Roaming/local/bin/Hash.exe\" \"%1\""
+  -- putStrLn "Enjoy!"
+  -- end
+
   args <- getArgs
   prog args

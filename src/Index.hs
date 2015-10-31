@@ -1,6 +1,16 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Index(
-             Index(..)
+            FolderName,
+            FileName,
+            Hash,
+            Folder(..),
+            File(..),
+            emptyFolder,
+            modifyFolder,
+            insertFile,
+            createFolder,
+            showFile,
+            showFolder
             ) where
 
 import Data.ByteString (ByteString)
@@ -10,42 +20,79 @@ import qualified Data.ByteString.Base16 as BS16
 import Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as T
+import Data.Map.Strict (Map)
+import qualified Data.Map.Strict as M
 import Data.Aeson
 import Data.Foldable (asum)
 
-data Index = Folder {
-              folderName :: Text,
-              folderEntries :: [Index]
-             } |
-             File {
-               fileName :: Text,
-               fileHash :: ByteString
-             }
+type FolderName = Text
+type FileName = Text
+type Hash = ByteString
 
-showIndex :: Index -> [Text]
-showIndex (Folder folderName folderEntries) = T.append folderName ":" : map (T.cons '\t') (concat $ showIndex <$> folderEntries)
-showIndex (File fileName fileHash) = [T.concat [fileName," = ", T.decodeUtf8 $ BS16.encode fileHash]]
+hashSize :: Int
+hashSize = 512
 
-instance Show Index where
-  show index = T.unpack $ T.intercalate "\n" (showIndex index)
+data Folder = Folder {
+                folders :: Map Text Folder,
+                files :: Map Text File
+              }
+data File = File Hash
 
-instance FromJSON Index where
-  parseJSON = withObject "Index: Folder or File" $ \o -> asum [
-      Folder <$> o .: "folderName" <*> o .: "folderEntries",
-      File <$> o .: "fileName" <*> do
-                                    fileHashS <- o .: "fileHash"
-                                    let base16O = BS16.decode $ T.encodeUtf8 fileHashS
-                                    assertCorrect base16O
-    ]
-    where assertCorrect (base16, "") | BS.length base16 == 512 = return base16
-          assertCorrect _ = fail "Not base 16 at length 512"
+emptyFolder :: Folder
+emptyFolder = Folder M.empty M.empty
 
-instance ToJSON Index where
-  toJSON (Folder folderName folderEntries) = object [
-      "folderName" .= folderName,
-      "folderEntries" .= folderEntries
-    ]
-  toJSON (File fileName fileHash) = object [
-      "fileName" .= fileName,
-      "fileHash" .= T.decodeUtf8 (BS16.encode fileHash)
+modifyFolder :: [FolderName] -> (Folder -> Folder) -> Folder -> Folder
+modifyFolder [] f root                                  = f root
+modifyFolder (folderName : fs) f (Folder folders files) =
+      Folder (M.insert folderName updatedFolder folders) files
+      where updatedFolder = modifyFolder fs f folder -- insert recursively as if that folder is the root.
+            folder = M.findWithDefault emptyFolder folderName folders
+
+
+-- insertFile: foo/bar/file.exe with hash. /file.exe
+insertFile :: [FolderName] -> FileName -> File -> Folder -> Folder
+insertFile pathToParent fileName (File hash) root = modifyFolder pathToParent addFile root
+      where addFile (Folder folders files) = Folder folders (M.insert {-key=-}fileName {-value=-}(File hash) {-into:-}files)
+
+createFolder :: [FolderName] -> Folder -> Folder
+createFolder path root = modifyFolder path id root
+
+showFile :: Text -> File -> [Text]
+showFile fileName (File fileHash) = [T.concat [fileName," = ", T.decodeUtf8 $ BS16.encode fileHash]]
+
+showFolder :: Text -> Folder -> [Text]
+showFolder folderName (Folder folders files) = T.append folderName ":" : map (T.append "  ") (shownFiles ++ shownFolders)
+      where
+            shownFiles :: [Text]
+            shownFiles = concat $ M.mapWithKey (showFile) files -- as if [Text]
+            shownFolders :: [Text]
+            shownFolders = concat $ M.mapWithKey (showFolder) folders -- as if [Text]
+
+
+instance Show Folder where
+  show folder = T.unpack $ T.intercalate "\n" (showFolder "root" folder)
+
+instance Show File where
+  show file = T.unpack $ T.intercalate "\n" (showFile "name?" file)
+
+instance FromJSON File where
+  parseJSON = withText "File" $ \fileHashS ->
+                File <$>  let base16O = BS16.decode $ T.encodeUtf8 fileHashS in
+                          assertCorrect base16O
+              where assertCorrect (base16, "") | BS.length base16 == hashSize = return base16
+                    assertCorrect _ = fail $ "Not base 16 at length " ++ show hashSize
+
+instance FromJSON Folder where
+  parseJSON = withObject "Folder" $ \o ->
+      Folder <$> o .: "folders" <*> o .: "files"
+--         Json -> Map Text Folder  Json -> Map Text File
+
+instance ToJSON File where
+  toJSON (File hash) = String hexaHash
+    where hexaHash = T.decodeUtf8 (BS16.encode hash)
+
+instance ToJSON Folder where
+  toJSON (Folder folders files) = object [
+      "folders" .= folders,
+      "files"   .= files -- (String, Map Text File -> Json)
     ]
