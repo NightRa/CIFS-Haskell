@@ -27,6 +27,8 @@ library
                        aeson-pretty,
                        attoparsec,
                        text,
+                       directory,
+                       filepath,
                        Win32
   default-language:    Haskell2010
 

@@ -16,17 +16,18 @@ end = do
   _ <- getChar
   exitSuccess
 
-prog :: [String] -> IO ()
-prog args = if length args /= 1
-            then do
-                  hPutStrLn stderr "The program needs a single argument - the file name."
-                  end
-            else let file = head args in do
-              putStrLn $ "The SHA3 hash of the file '" ++ file ++ "' is: "
-              hash <- hashFile file
-              print $ BS.unpack hash
-              end
+prototype1_Hash :: FilePath -> IO ()
+prototype1_Hash file = do
+                         putStrLn $ "The SHA3 hash of the file '" ++ file ++ "' is: "
+                         hash <- hashFile file
+                         print $ BS.unpack hash
+                         end
 
+prototype2_Index_Folder :: FilePath -> IO ()
+prototype2_Index_Folder folder = do
+                                  index <- indexFolder folder
+                                  print index
+                                  end
 
 main :: IO ()
 main = do
@@ -38,4 +39,9 @@ main = do
   -- end
 
   args <- getArgs
-  prog args
+  if length args /= 1
+  then do
+       hPutStrLn stderr "The program needs a single argument - the file name."
+       end
+  else
+    prototype2_Index_Folder (head args)
