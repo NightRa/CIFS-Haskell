@@ -1,27 +1,22 @@
 {-# LANGUAGE OverloadedStrings #-}
 module Lib(
           hashFile,
-          indexFolder,
+          readFolderStructure,
           getFiles,
-          getFolders
+          getFolders,
+          indexFolder
           ) where
 
 import Control.Monad
-import Data.ByteString (ByteString)
-import qualified Data.ByteString.Lazy as LBS
-import Crypto.Hash.SHA3
 import System.Directory
 import System.FilePath
-import Index
 import qualified Data.Map.Strict as M
 import qualified Data.Text as T
+import Folder
+import Index
+import IO.Hashing
 
 -- Note: Lazy IO gives us an open handle leakage. Need to fix.
-
-hashFile :: FilePath -> IO Hash
-hashFile file = do
-  fileContents <- LBS.readFile file
-  return $ hashlazy 128 fileContents
 
 getFiles :: FilePath -> IO [FilePath]
 getFiles path = do
@@ -37,9 +32,47 @@ getFolders path = do
       contentPaths = (\name -> addTrailingPathSeparator (path </> name)) <$> contents
   filterM doesDirectoryExist contentPaths
 
+{-
+x.exe
+foo/
+  bar/a.exe
+  b.exe
+=>
+x.exe
+foo/bar/a.exe
+foo/b.exe
+-}
+getAbsoluteFilesRecursively :: FilePath -> IO [FilePath]
+getAbsoluteFilesRecursively path =
+  do
+    rootFiles <- getFiles path
+    folderNames <- getFolders path
 
-indexFolder :: FilePath -> IO Folder
+    -- [a] -> (a -> IO [b]) -> IO [b]
+    -- traverse -> IO [[b]] -> map (join) -> IO [b]
+    recFiles <- join <$> traverse (getAbsoluteFilesRecursively) folderNames
+    -- IO [a] -> (a -> IO [b]) -> IO [b]
+    -- Can use a monad transformer on IO [a]!
+    -- f a = IO [a] -- Has a monad transormer
+
+    return $ rootFiles ++ recFiles
+
+indexFolder :: FilePath -> IO Index
 indexFolder path = do
+    absFiles <- getAbsoluteFilesRecursively path
+    foldM insertToIndex emptyIndex absFiles
+  where insertToIndexId :: FilePath -> [FolderName] -> FileName -> Index -> IO Index
+        insertToIndexId = insertFile (\filePath _ -> return filePath) -- Notice: prototype 3 behavior!
+        insertToIndex :: Index -> FilePath -> IO Index
+        insertToIndex index file = insertToIndexId file (T.pack <$> relFolderPath file) (T.pack $ fileName file) index
+        relFolderPath :: FilePath -> [FilePath]
+        relFolderPath file = splitDirectories $ makeRelative path file
+        fileName :: FilePath -> FilePath
+        fileName file = takeFileName file
+
+
+readFolderStructure :: FilePath -> IO Folder
+readFolderStructure path = do
     fileNames <- getFiles path
     folderNames <- getFolders path
     fileHashes <- traverse (\fileName -> do
@@ -47,6 +80,6 @@ indexFolder path = do
                               return (T.pack (takeFileName fileName), File hash)) fileNames
     indexedFolders <- traverse (\folderName ->
                                   do
-                                    folderIndex <- indexFolder folderName
+                                    folderIndex <- readFolderStructure folderName
                                     return (T.pack (last . splitDirectories $ takeDirectory folderName), folderIndex)) folderNames
     return $ Folder (M.fromList indexedFolders) (M.fromList fileHashes)

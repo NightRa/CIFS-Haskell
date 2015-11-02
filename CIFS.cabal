@@ -15,8 +15,12 @@ cabal-version:       >=1.10
 
 library
   hs-source-dirs:      src
-  exposed-modules:     Lib,
+  exposed-modules:     Folder,
+                       InvertedTable,
                        Index,
+                       Util.Show,
+                       IO.Hashing,
+                       Lib,
                        Win32.ContextMenu
   build-depends:       base >= 4.7 && < 5,
                        containers,
@@ -29,7 +33,8 @@ library
                        text,
                        directory,
                        filepath,
-                       Win32
+                       Win32,
+                       bytestring-trie
   default-language:    Haskell2010
 
 executable CIFS

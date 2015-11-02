@@ -1,6 +1,8 @@
 module Main where
 
 import Lib
+import Folder
+import Index
 import Win32.ContextMenu
 
 import qualified Data.ByteString as BS
@@ -19,15 +21,21 @@ end = do
 prototype1_Hash :: FilePath -> IO ()
 prototype1_Hash file = do
                          putStrLn $ "The SHA3 hash of the file '" ++ file ++ "' is: "
-                         hash <- hashFile file
+                         Hash hash <- hashFile file
                          print $ BS.unpack hash
                          end
 
 prototype2_Index_Folder :: FilePath -> IO ()
 prototype2_Index_Folder folder = do
-                                  index <- indexFolder folder
-                                  print index
+                                  folder <- readFolderStructure folder
+                                  print folder
                                   end
+
+prototype3_Index_InvertedTable :: FilePath -> IO ()
+prototype3_Index_InvertedTable folder = do
+                                          index <- indexFolder folder
+                                          print $ invertedTable index
+                                          end
 
 main :: IO ()
 main = do
@@ -44,4 +52,4 @@ main = do
        hPutStrLn stderr "The program needs a single argument - the file name."
        end
   else
-    prototype2_Index_Folder (head args)
+    prototype3_Index_InvertedTable (head args)
