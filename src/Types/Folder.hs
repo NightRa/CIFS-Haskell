@@ -37,7 +37,11 @@ data File = File Hash
 emptyFolder :: Folder
 emptyFolder = Folder M.empty M.empty
 
-modifyFolder :: [FolderName] -> (Folder -> Folder) -> Folder -> Folder
+-- | Modify the folder at the file path with the given function,
+-- | while creating the folder if it doesn't exist.
+modifyFolder :: [FolderName] -- | The folder path
+                -> (Folder -> Folder) -- | The modification function
+                 -> Folder -> Folder
 modifyFolder [] f root                                  = f root
 modifyFolder (folderName : fs) f (Folder folders files) =
       Folder (M.insert folderName updatedFolder folders) files
@@ -46,12 +50,18 @@ modifyFolder (folderName : fs) f (Folder folders files) =
 
 
 -- insertFile: foo/bar/file.exe with hash. /file.exe
-insertFileToFolder :: [FolderName] -> FileName -> File -> Folder -> Folder
+-- | Insert the given file with the given hash at the given file path.
+insertFileToFolder :: [FolderName] -- | The folder path
+                      -> FileName -- | The file name
+                      -> File -- | The file hash
+                      -> Folder -> Folder
 insertFileToFolder pathToParent fileName (File hash) root = modifyFolder pathToParent addFile root
       where
         addFile (Folder folders files) = Folder folders (M.insert {-key=-}fileName {-value=-}(File hash) {-into:-}files)
 
-createFolder :: [FolderName] -> Folder -> Folder
+-- | Create the folder at the given path if it doesn't already exist.
+createFolder :: [FolderName] -- | The folder name
+                -> Folder -> Folder
 createFolder path root = modifyFolder path id root
 
 --------------------------- Show Instances ------------------------------------
@@ -66,7 +76,6 @@ showFolder folderName (Folder folders files) = T.append folderName ":" : map (T.
             shownFiles = concat $ M.mapWithKey (showFile) files -- as if [Text]
             shownFolders :: [Text]
             shownFolders = concat $ M.mapWithKey (showFolder) folders -- as if [Text]
-
 
 instance Show Folder where
   show folder = T.unpack $ T.intercalate "\n" (showFolder "root" folder)

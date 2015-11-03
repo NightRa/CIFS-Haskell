@@ -15,8 +15,10 @@ import qualified Data.Text.Encoding as T
 
 ------------------------------- Datatypes -------------------------------------
 
+-- | A Hash of some data, currently is SHA3-512
 newtype Hash = Hash ByteString
 
+-- | This is a constant for the time being, will be generalized at some point.
 hashSize :: Int
 hashSize = 512
 
