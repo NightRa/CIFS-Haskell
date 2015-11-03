@@ -1,9 +1,13 @@
 module Main where
 
-import Lib
-import Folder
-import Index
+import Types.Hash
+import Types.Folder
+import Types.Index
+import IO.Hashing
 import Win32.ContextMenu
+
+import Demos.Demo2
+import Demos.Demo3
 
 import qualified Data.ByteString as BS
 import System.Environment

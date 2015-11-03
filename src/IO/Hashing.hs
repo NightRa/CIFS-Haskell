@@ -1,10 +1,11 @@
-module IO.Hashing(hashFile) where
+module IO.Hashing (hashFile) where
 
 import Data.ByteString (ByteString)
 import qualified Data.ByteString.Lazy as LBS
 import Crypto.Hash.SHA3
 
-import Folder
+import Types.Folder
+import Types.Hash
 
 hashFile :: FilePath -> IO Hash
 hashFile file = do

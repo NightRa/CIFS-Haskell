@@ -1,18 +1,26 @@
 {-# LANGUAGE OverloadedStrings #-}
-module Index(
+module Types.Index(
             Index(..),
             insertFile,
             emptyIndex
             ) where
 
-import InvertedTable
-import Folder
+import Types.InvertedTable
+import Types.Folder
+import Types.Hash
 import IO.Hashing
+
+------------------------------- Datatypes -------------------------------------
 
 data Index = Index {
                rootFolder :: Folder,
                invertedTable :: InvertedTable
              }
+
+-------------------------- Index manipulation ---------------------------------
+
+emptyIndex :: Index
+emptyIndex = Index emptyFolder emptyInvertedTable
 
 -- save :: FilePath -> Hash -> IO FilePath
 insertFile :: (FilePath -> Hash -> IO FilePath) -> FilePath -> [FolderName] -> FileName -> Index -> IO Index
@@ -22,6 +30,3 @@ insertFile save filePathInDisk parentPath fileName (Index root invertedTable) = 
   let newRootFolder = insertFileToFolder parentPath fileName (File hash) root
   let newInvertedTable = insertFileToInvertedTable hash newFilePathInDisk invertedTable
   return $ Index newRootFolder newInvertedTable
-
-emptyIndex :: Index
-emptyIndex = Index emptyFolder emptyInvertedTable

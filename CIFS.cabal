@@ -15,12 +15,15 @@ cabal-version:       >=1.10
 
 library
   hs-source-dirs:      src
-  exposed-modules:     Folder,
-                       InvertedTable,
-                       Index,
-                       Util.Show,
+  exposed-modules:     Types.Hash,
+                       Types.Folder,
+                       Types.InvertedTable,
+                       Types.Index,
                        IO.Hashing,
-                       Lib,
+                       System.Directory.Extras,
+                       Util.Show,
+                       Demos.Demo2,
+                       Demos.Demo3
                        Win32.ContextMenu
   build-depends:       base >= 4.7 && < 5,
                        containers,
