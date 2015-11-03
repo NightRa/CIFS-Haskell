@@ -1,4 +1,4 @@
---------------------- Current components ---------------------------
+# Current components
 
 Datatypes: 'Types' folder
 - File
@@ -19,7 +19,7 @@ General File system IO operations: System.Directory.Extras
 Util.Show:
 - mkString
 
-------------------------- Datatypes --------------------------------
+# Datatypes
 
 Hash:  
   A ByteString of length 512, currently SHA3-512
